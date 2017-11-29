@@ -1,0 +1,83 @@
+//#include "vision.h"
+#include "opencv2/opencv.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include <vector>
+#include <iostream>
+#include <string>
+
+#define PI 3.141592
+//Setting Variable
+#define POSITION_Y 151 //will be adjuted
+#define FRAME_WIDTH 320
+//HSV Color Condition (YELLOW)
+#define Y_H_LOW 20
+#define Y_H_HIGH 70
+#define Y_S_LOW 60
+#define Y_S_HIGH 250
+#define Y_V_LOW 30
+#define Y_V_HIGH 255
+//HSV Color Condition (Red)
+#define R_H_LOW 0
+#define R_H_HIGH 60
+#define R_S_LOW 10
+#define R_S_HIGH 255
+#define R_V_LOW 10
+#define R_V_HIGH 255
+//HSV Color Condition (Green)
+#define G_H_LOW 60
+#define G_H_HIGH 160
+#define G_S_LOW 0
+#define G_S_HIGH 255
+#define G_V_LOW 0
+#define G_V_HIGH 255
+//HSV Color Condition (White)
+#define W_H_LOW 0
+#define W_H_HIGH 360
+#define W_S_LOW 0
+#define W_S_HIGH 255
+#define W_V_LOW 240
+#define W_V_HIGH 255
+
+using namespace std;
+using namespace cv;
+
+int centerpointX = 160; 
+int centerpointY = 140;
+
+int main()
+{
+	/*------------------------영상전처리----------------------*/ 
+	Mat Img = imread("/home/yeogsam/Desktop/image/Stop.PNG",IMREAD_COLOR);//Red 컬러로 
+	//ROI설정 
+	int left,right,up,down;
+	left=100;
+	right=220;
+	up=120;
+	down=180;
+	Mat W_ROI = Img(Rect(Point(left,up),Point(right,down)));//160*120=19200
+
+	//Hsv색공간 변조 
+	Mat Hsv_Img;
+	cvtColor(W_ROI, Hsv_Img, COLOR_BGR2HSV);
+
+	//영상 이진화 
+	Mat White_Binary_Img;
+	inRange(W_ROI, Scalar(W_H_LOW, W_S_LOW, W_V_LOW), Scalar(W_H_HIGH, W_S_HIGH, W_V_HIGH), White_Binary_Img);
+    //화소분석
+	int White_cnt=0,TotalPixel=(right-left)*(down-up),data=0; 
+	for(int i=0; i <= 120; i++)
+	{
+		for(int j=0; j<=60; j++){
+			data=White_Binary_Img.at<uchar>(j,i); //화소접근시 x,y좌표 반대로 되므로 주의!!! 
+
+			if(data>100){White_cnt++;}
+		//cout<<"White_Pixel: "<<White_cnt<<endl;      
+		}
+	cout<<"White_Pixel: "<<White_cnt<<endl;      
+	}
+	if(TotalPixel*0.05<White_cnt){cout<<"StopLine was detected "<<endl;}
+	cout<<"TotalPixel: "<<TotalPixel<<endl;      
+	cout<<"White_Pixel: "<<White_cnt<<endl;      
+	//waitKey(0);
+	return 0;
+}
