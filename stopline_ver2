@@ -1,0 +1,109 @@
+int stop_line(IplImage* inputImage){
+
+  Mat blurImage;
+  Mat cannyImage,binimg,gray;
+
+  int white_cnt=0, avg=0;
+  Mat imgOrigin(inputImage);
+
+  Mat hsvImage,img_binary;
+    // int LowH = 0;
+  // int HighH = 360;
+  //
+    // int LowS = 0;
+  // int HighS = 45;
+  //
+    // int LowV = 230;
+  // int HighV = 255;
+
+        cvtColor(imgOrigin, hsvImage, COLOR_BGR2HSV);
+        inRange(hsvImage, Scalar(W_H_LOW, W_S_LOW, W_V_LOW), Scalar(W_H_HIGH, W_S_HIGH, W_V_HIGH), img_binary);
+        //imshow("img_binary",img_binary);
+
+  // Mat roadImage(imgOrigin.rows, imgOrigin.cols, 16);
+
+  vector<cv::Vec4i> lines;
+  double lIntersection=0, rIntersection=320, centerPoint;
+  cv::Vec4i leftLine, rightLine;
+
+  GaussianBlur(imgOrigin, blurImage, cv::Size(3, 0), 1.5);
+  Canny(blurImage, cannyImage, 100, 200);
+  //imshow("can",cannyImage);
+  HoughLinesP( cannyImage, lines, 1, CV_PI/180,  30, 20, 3);
+    unsigned char R,G,B;
+    int bin1,bin2,binl,binr,binc;
+  for(int i = 0; i < lines.size(); i++){
+     cv::Vec4i L = lines[i];
+     double slope = 0;
+     double xPosition = 0;
+     //=================Find Intersection
+     //x1 == x2
+     if(L[0] == L[2]){
+       xPosition = (double)L[0];
+       if(!(POSITION_Y >= min(L[1], L[3]) && xPosition <= max(L[1], L[3])))
+          xPosition = -1;
+     }
+     //x1 != x2
+     else{
+       slope = (-1 * ((double)L[3] - (double)L[1])) / ((double)L[2] - (double)L[0]);
+       xPosition = (slope * (double)L[0] + (double)L[1] + ((-1) * POSITION_Y)) / slope;
+       if(!(xPosition >= min(L[0], L[2]) && xPosition <= max(L[0], L[2])))
+          xPosition = -1;
+     }
+     //=================Find Left Intersection
+     if(xPosition >= 0 && xPosition <= (FRAME_WIDTH / 2)){
+       lIntersection = max(lIntersection, xPosition);
+       leftLine = L;
+     }
+     //=================Find Right Intersection
+     if(xPosition >= (FRAME_WIDTH / 2) && xPosition <= FRAME_WIDTH){
+        rIntersection = min(rIntersection, xPosition);
+        rightLine = L;
+     }
+     centerPoint = (lIntersection + rIntersection) / 2;
+
+
+    }// for i??
+
+  //Draw Left Line
+   cv::line(imgOrigin, cv::Point(leftLine[0],leftLine[1]), cv::Point(leftLine[2],leftLine[3]),
+        cv::Scalar(0,0,255), 1, 16 );
+  //Draw Left Line
+    cv::line(imgOrigin, cv::Point(rightLine[0],rightLine[1]), cv::Point(rightLine[2],rightLine[3]),
+       cv::Scalar(0,0,255), 1, 16 );
+       //Save Road Image
+       cv::circle(imgOrigin,
+    cv::Point(centerPoint, POSITION_Y ),
+   10,
+    cv::Scalar(255),
+    2);
+            for(int j = (POSITION_Y+5); j >= (POSITION_Y-5); j--){ // POSITION_Y(40cm px) +10px -10px
+              /*
+              DATA_TYPE* data = (DATA_TYPE*) image.data;
+              data[ROW * IMAGE_COLS + COL]
+              */
+
+              uchar* data=(uchar*)img_binary.data;
+              binl =data[(int)(centerPoint-40)*240+j];
+              binr = data[(int)(centerPoint+40)*240+j];
+              binc = data[(int)centerPoint*240+j];
+
+              if(binl >=250 || binr>=250 || binc>=250){
+  white_cnt++;
+  cout<<"white: "<<white_cnt<<endl;
+  cv::circle(imgOrigin, //draw biggest circle
+    cv::Point(centerPoint, j ), // ߽
+       10,  //
+    cv::Scalar(255), // ÷
+    2);    // β
+                }//if
+            }//for j
+  // }//for k
+   if(white_cnt>=11){ // if white data over x*y's 60%  //250
+     cout<<"cnt"<<white_cnt<<endl;
+     cout<<"stop!!!!!!!!!!!!!!!"<<endl;
+        // cv::waitKey(0);
+     white_cnt=0;
+     return 255; // detect stopline.
+   }//if
+}//end stopline
