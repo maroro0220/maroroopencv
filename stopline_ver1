@@ -1,0 +1,61 @@
+bool stop_line(IplImage* inputImage, double centerPoint){
+  Mat inputImage(inputImage);
+  Mat blurImage;
+  Mat cannyImage,binimg,gray;
+//  Rect rect(100, 30, 150, 300);
+int white_cnt=0, avg=0;
+  Mat imgOrigin(inputImage);
+  Mat as(imgOrigin.rows,imgOrigin.cols,CV_8UC1);
+  imshow("img origin",imgOrigin);
+  Mat hsvImage,img_binary;
+   int LowH = 0;
+  int HighH = 360;
+   int LowS = 0;
+  int HighS = 45;
+   int LowV = 230;
+  int HighV = 255;
+        cvtColor(imgOrigin, hsvImage, COLOR_BGR2HSV);
+        inRange(hsvImage, Scalar(LowH, LowS, LowV), Scalar(HighH, HighS, HighV), img_binary);
+        imshow("img_binary",img_binary);
+  Mat roadImage(imgOrigin.rows, imgOrigin.cols, 16);
+  cv::circle(imgOrigin,
+    cv::Point(centerPoint, POSITION_Y ),
+   10,
+    cv::Scalar(255),
+    2);
+   for( int k = centerPoint-20 ; k < centerPoint+20; k++ ){   //281-13
+         for(int j = (POSITION_Y+5); j >= (POSITION_Y-5); j—){ // POSITION_Y(40cm px) +10px -10px
+/*
+DATA_TYPE* data = (DATA_TYPE*) image.data;
+data[ROW * IMAGE_COLS + COL]
+*/
+uchar* data=(uchar*)img_binary.data;
+bin1=data[k*240 + j];
+bin2=data[k*240 + (j+25)];
+            //  bin=img_binary.at<uchar>(k,j);
+if(bin1 >=200 || bin2>=200){
+  cout<<"bin1: "<<bin1<<endl;
+  cout<<"bin2: "<<bin2<<endl;
+white_cnt++;
+  cout<<"white: "<<white_cnt<<endl;
+cv::circle(imgOrigin, //draw biggest circle
+    cv::Point(k, j ), // ?? ???
+      10,  // ?? ??????
+    cv::Scalar(255), // ?÷?
+    2);    // ?β?
+            }//if
+         }//for j
+ cv::imshow("img line3",imgOrigin);
+   }//for k
+   if(white_cnt>=60){ // if white data over x*y's 60%  //250
+     cout<<"cnt"<<white_cnt<<endl;
+     cout<<"stop!!!!!!!!!!!!!!!"<<endl;
+     cv::imshow("img line4",imgOrigin);
+     cv::imshow("bin_img line4",img_binary);
+        // cv::waitKey(0);
+     white_cnt=0;
+     //return 255; // detect stopline.
+     return true;
+   }//if
+   return false;
+}//end stopline
